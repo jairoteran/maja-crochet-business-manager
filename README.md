@@ -1,24 +1,24 @@
 # Maja
 
-Sistema sencillo para administrar un taller de tejido.
+A simple system for managing a crochet and knitting workshop.
 
-Permite registrar:
+It allows you to track:
 
-- Ventas.
-- Gastos.
-- Clientes.
-- Inventario de lana.
-- Análisis del negocio con Gemini.
+- Sales.
+- Expenses.
+- Customers.
+- Yarn inventory.
+- Business insights powered by Gemini.
 
-## Requisitos
+## Requirements
 
-- Node.js instalado.
-- Un proyecto de Supabase.
-- Una clave de la API de Gemini.
+- Node.js.
+- A Supabase project.
+- A Gemini API key.
 
-## Instalación
+## Installation
 
-Clona el repositorio e instala las dependencias:
+Clone the repository and install the dependencies:
 
 ```bash
 git clone https://github.com/jairoteran/maja-tejido-mvp.git
@@ -26,59 +26,59 @@ cd maja-tejido-mvp
 npm install
 ```
 
-Copia `.env.example` como `.env.local` y completa las claves:
+Copy `.env.example` to `.env.local` and add your credentials:
 
 ```env
-GEMINI_API_KEY=tu_clave_de_gemini
+GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-3.6-flash
 
-NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=tu_clave_publicable
-NEXT_PUBLIC_AUTH_USERNAME=tu_usuario
-NEXT_PUBLIC_AUTH_EMAIL=correo_del_usuario_en_supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+NEXT_PUBLIC_AUTH_USERNAME=your_username
+NEXT_PUBLIC_AUTH_EMAIL=the_users_supabase_email
 ```
 
-No subas `.env.local` a GitHub.
+Do not commit `.env.local` to GitHub.
 
-## Configurar Supabase
+## Supabase setup
 
-En **Supabase → SQL Editor**, ejecuta estos archivos en orden:
+Open **Supabase → SQL Editor** and run these files in order:
 
 1. `supabase/migrations/202608130001_create_maja_state.sql`
 2. `supabase/migrations/202608130002_secure_with_auth.sql`
 
-Después, en **Authentication → Users**, crea o confirma el correo indicado en `NEXT_PUBLIC_AUTH_EMAIL`. La contraseña se configura directamente en Supabase.
+Then open **Authentication → Users** and create or confirm the email specified in `NEXT_PUBLIC_AUTH_EMAIL`. Set the password directly in Supabase.
 
-## Iniciar
+## Start the application
 
 ```bash
 npm run dev
 ```
 
-Abre la dirección que aparece en la terminal, normalmente:
+Open the address shown in the terminal, usually:
 
 ```text
 http://localhost:5173
 ```
 
-Inicia sesión con el usuario configurado en Supabase.
+Sign in with the user configured in Supabase.
 
-## Uso
+## Usage
 
-- **Inicio:** muestra ingresos, gastos y ganancia.
-- **Ventas:** registra los pedidos vendidos.
-- **Gastos:** registra compras de lana, herramientas y otros materiales.
-- **Clientes:** guarda los datos de los compradores.
-- **Inventario:** controla los ovillos y muestra alertas de stock bajo.
-- **Mi contador IA:** responde preguntas utilizando los datos registrados.
+- **Home:** view income, expenses, and profit.
+- **Sales:** record completed orders.
+- **Expenses:** record yarn, tools, and other material purchases.
+- **Customers:** manage customer information.
+- **Inventory:** track yarn and receive low-stock alerts.
+- **AI Accountant:** ask questions based on the recorded business data.
 
-Los datos se guardan en Supabase. El navegador conserva una copia local como respaldo.
+Data is stored in Supabase. The browser keeps a local backup.
 
-## Otros comandos
+## Other commands
 
 ```bash
 npm run build
 npm run lint
 ```
 
-El análisis de la IA es orientativo y no reemplaza asesoría contable o tributaria profesional.
+AI-generated insights are for guidance only and do not replace professional accounting or tax advice.
