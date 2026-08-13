@@ -31,6 +31,7 @@ import {
   signIn,
   signOut,
   supabase,
+  supabaseConfigured,
 } from "./supabase";
 import "./App.css";
 type Page =
@@ -109,11 +110,15 @@ function App() {
   >("connecting");
 
   useEffect(() => {
-    void supabase?.auth.getSession().then(({ data }) => {
+    if (!supabase) {
+      setAuthChecked(true);
+      return;
+    }
+    void supabase.auth.getSession().then(({ data }) => {
       setUserId(data.session?.user.id ?? null);
       setAuthChecked(true);
     });
-    const subscription = supabase?.auth.onAuthStateChange((_event, session) => {
+    const subscription = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user.id ?? null);
       setAuthChecked(true);
       if (!session) {
@@ -122,7 +127,7 @@ function App() {
         localStorage.removeItem("maja-store-v2");
       }
     });
-    return () => subscription?.data.subscription.unsubscribe();
+    return () => subscription.data.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -173,7 +178,7 @@ function App() {
         <p>Preparando tu taller…</p>
       </div>
     );
-  if (!userId) return <LoginPage />;
+  if (!userId) return <LoginPage configured={supabaseConfigured} />;
   const go = (p: Page) => {
     setPage(p);
     setMobileNav(false);
@@ -284,7 +289,7 @@ function App() {
     </div>
   );
 }
-function LoginPage() {
+function LoginPage({ configured }: { configured: boolean }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -317,6 +322,12 @@ function LoginPage() {
           <p>Tus ventas, gastos y materiales te esperan.</p>
         </div>
         <form onSubmit={submit}>
+          {!configured && (
+            <div className="login-error">
+              Falta configurar Supabase en las variables de entorno del
+              despliegue.
+            </div>
+          )}
           <label>
             Usuario
             <input
@@ -338,7 +349,7 @@ function LoginPage() {
             />
           </label>
           {error && <div className="login-error">{error}</div>}
-          <button className="primary" disabled={loading}>
+          <button className="primary" disabled={loading || !configured}>
             <LockKeyhole />
             {loading ? "Ingresando…" : "Iniciar sesión"}
           </button>

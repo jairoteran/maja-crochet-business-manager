@@ -81,4 +81,8 @@ npm run build
 npm run lint
 ```
 
+## Deploying to Vercel
+
+Add every variable from `.env.example` in **Vercel → Project Settings → Environment Variables**, then redeploy the application. Local `.env.local` files are not uploaded to GitHub or Vercel.
+
 AI-generated insights are for guidance only and do not replace professional accounting or tax advice.
