@@ -8,6 +8,9 @@ drop policy if exists "Temporary MVP update access" on public.maja_state;
 revoke all on table public.maja_state from anon;
 grant select, insert, update on table public.maja_state to authenticated;
 
+alter table public.maja_state
+  drop constraint if exists maja_state_single_record;
+
 drop policy if exists "Users read their own state" on public.maja_state;
 create policy "Users read their own state"
   on public.maja_state for select

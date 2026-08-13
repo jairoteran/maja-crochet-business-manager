@@ -250,7 +250,9 @@ function App() {
                     ? "Guardando…"
                     : syncStatus === "connecting"
                       ? "Conectando…"
-                      : "Solo local"}
+                      : syncStatus === "error"
+                        ? "Error al guardar"
+                        : "Solo local"}
               </span>
             </span>
             <button className="icon-button">

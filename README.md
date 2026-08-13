@@ -46,6 +46,7 @@ Open **Supabase → SQL Editor** and run these files in order:
 
 1. `supabase/migrations/202608130001_create_maja_state.sql`
 2. `supabase/migrations/202608130002_secure_with_auth.sql`
+3. `supabase/migrations/202608130003_remove_single_record_constraint.sql`
 
 Then open **Authentication → Users** and create or confirm the email specified in `NEXT_PUBLIC_AUTH_EMAIL`. Set the password directly in Supabase.
 
