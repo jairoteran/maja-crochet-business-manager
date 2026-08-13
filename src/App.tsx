@@ -169,7 +169,7 @@ function App() {
   if (!authChecked)
     return (
       <div className="auth-loading">
-        <span className="brand-mark">M</span>
+        <img className="brand-logo" src="/maja-logo.jpg" alt="Maja Tejidos" />
         <p>Preparando tu taller…</p>
       </div>
     );
@@ -182,7 +182,7 @@ function App() {
     <div className="app-shell">
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
         <div className="brand">
-          <span className="brand-mark">M</span>
+          <img className="brand-logo" src="/maja-logo.jpg" alt="Maja Tejidos" />
           <div>
             <strong>Maja</strong>
             <small>Mi taller de tejido</small>
@@ -301,7 +301,11 @@ function LoginPage() {
     <main className="login-page">
       <section className="login-card">
         <div className="login-brand">
-          <span className="brand-mark">M</span>
+          <img
+            className="brand-logo login-logo"
+            src="/maja-logo.jpg"
+            alt="Maja Tejidos"
+          />
           <div>
             <strong>Maja</strong>
             <small>Mi taller de tejido</small>
@@ -342,7 +346,7 @@ function LoginPage() {
         <p className="login-note">Acceso privado protegido por Supabase</p>
       </section>
       <div className="login-decoration">
-        <span>〰</span>
+        <img src="/maja-logo.jpg" alt="Maja Tejidos, artesanía y amor" />
         <p>
           Un espacio tranquilo para que tus números estén tan bien tejidos como
           tus creaciones.
