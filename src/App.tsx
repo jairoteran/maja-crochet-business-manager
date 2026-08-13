@@ -708,17 +708,17 @@ function SalesTable({ sales }: { sales: Sale[] }) {
           )}
           {sales.map((s) => (
             <tr key={s.id}>
-              <td>
+              <td data-label="Producto">
                 <strong>{s.product}</strong>
               </td>
-              <td>{s.customer}</td>
-              <td>{dateLabel(s.date)}</td>
-              <td>
+              <td data-label="Cliente">{s.customer}</td>
+              <td data-label="Fecha">{dateLabel(s.date)}</td>
+              <td data-label="Estado">
                 <span className={`status ${s.status.toLowerCase()}`}>
                   {s.status}
                 </span>
               </td>
-              <td className="right">
+              <td className="right" data-label="Total">
                 <strong>{money(s.amount)}</strong>
               </td>
             </tr>
@@ -777,14 +777,14 @@ function ExpensesPage({ store, open }: { store: Store; open: () => void }) {
               )}
               {store.expenses.map((e) => (
                 <tr key={e.id}>
-                  <td>
+                  <td data-label="Descripción">
                     <strong>{e.description}</strong>
                   </td>
-                  <td>
+                  <td data-label="Categoría">
                     <span className="soft-tag">{e.category}</span>
                   </td>
-                  <td>{dateLabel(e.date)}</td>
-                  <td className="right">
+                  <td data-label="Fecha">{dateLabel(e.date)}</td>
+                  <td className="right" data-label="Valor">
                     <strong>{money(e.amount)}</strong>
                   </td>
                 </tr>
