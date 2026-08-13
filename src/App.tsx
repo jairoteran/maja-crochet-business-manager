@@ -377,7 +377,16 @@ function App() {
             <button className="icon-button">
               <Search />
             </button>
-            <div className="avatar">MJ</div>
+            <button
+              className="avatar"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              onClick={() => {
+                if (window.confirm("¿Cerrar sesión?")) void signOut();
+              }}
+            >
+              MJ
+            </button>
           </div>
         </header>
         <div className="content">
