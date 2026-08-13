@@ -21,6 +21,7 @@ import {
   ShoppingBag,
   Sparkles,
   TrendingUp,
+  Trash2,
   Users,
   WalletCards,
   X,
@@ -183,6 +184,48 @@ function App() {
     setPage(p);
     setMobileNav(false);
   };
+  const removeSale = (id: number) => {
+    if (
+      !window.confirm("¿Eliminar esta venta? Esta acción no se puede deshacer.")
+    )
+      return;
+    setStore((current) => {
+      const sale = current.sales.find((item) => item.id === id);
+      if (!sale) return current;
+      return {
+        ...current,
+        sales: current.sales.filter((item) => item.id !== id),
+        customers: current.customers.map((customer) =>
+          customer.name.toLowerCase() === sale.customer.toLowerCase()
+            ? {
+                ...customer,
+                orders: Math.max(0, customer.orders - 1),
+                total: Math.max(0, customer.total - sale.amount),
+              }
+            : customer,
+        ),
+      };
+    });
+  };
+  const removeCustomer = (id: number) => {
+    if (
+      !window.confirm(
+        "¿Eliminar este cliente? Sus ventas históricas se conservarán.",
+      )
+    )
+      return;
+    setStore((current) => ({
+      ...current,
+      customers: current.customers.filter((customer) => customer.id !== id),
+    }));
+  };
+  const removeYarn = (id: number) => {
+    if (!window.confirm("¿Eliminar esta lana del inventario?")) return;
+    setStore((current) => ({
+      ...current,
+      yarn: current.yarn.filter((item) => item.id !== id),
+    }));
+  };
   return (
     <div className="app-shell">
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
@@ -266,16 +309,28 @@ function App() {
             <Dashboard store={store} go={go} open={setModal} />
           )}{" "}
           {page === "Ventas" && (
-            <SalesPage store={store} open={() => setModal("sale")} />
+            <SalesPage
+              store={store}
+              open={() => setModal("sale")}
+              remove={removeSale}
+            />
           )}{" "}
           {page === "Gastos" && (
             <ExpensesPage store={store} open={() => setModal("expense")} />
           )}{" "}
           {page === "Clientes" && (
-            <CustomersPage store={store} open={() => setModal("customer")} />
+            <CustomersPage
+              store={store}
+              open={() => setModal("customer")}
+              remove={removeCustomer}
+            />
           )}{" "}
           {page === "Inventario" && (
-            <InventoryPage store={store} open={() => setModal("yarn")} />
+            <InventoryPage
+              store={store}
+              open={() => setModal("yarn")}
+              remove={removeYarn}
+            />
           )}{" "}
           {page === "Mi contador IA" && <AIPage store={store} />}
         </div>
@@ -638,7 +693,15 @@ function PageHeader({
     </section>
   );
 }
-function SalesPage({ store, open }: { store: Store; open: () => void }) {
+function SalesPage({
+  store,
+  open,
+  remove,
+}: {
+  store: Store;
+  open: () => void;
+  remove: (id: number) => void;
+}) {
   const total = store.sales.reduce((a, s) => a + s.amount, 0);
   return (
     <>
@@ -680,12 +743,18 @@ function SalesPage({ store, open }: { store: Store; open: () => void }) {
             Exportar
           </button>
         </div>
-        <SalesTable sales={store.sales} />
+        <SalesTable sales={store.sales} onDelete={remove} />
       </div>
     </>
   );
 }
-function SalesTable({ sales }: { sales: Sale[] }) {
+function SalesTable({
+  sales,
+  onDelete,
+}: {
+  sales: Sale[];
+  onDelete?: (id: number) => void;
+}) {
   return (
     <div className="table-wrap">
       <table>
@@ -696,12 +765,13 @@ function SalesTable({ sales }: { sales: Sale[] }) {
             <th>Fecha</th>
             <th>Estado</th>
             <th className="right">Total</th>
+            {onDelete && <th className="right">Acciones</th>}
           </tr>
         </thead>
         <tbody>
           {sales.length === 0 && (
             <tr>
-              <td colSpan={5} className="empty-cell">
+              <td colSpan={onDelete ? 6 : 5} className="empty-cell">
                 No hay ventas registradas todavía.
               </td>
             </tr>
@@ -721,6 +791,18 @@ function SalesTable({ sales }: { sales: Sale[] }) {
               <td className="right" data-label="Total">
                 <strong>{money(s.amount)}</strong>
               </td>
+              {onDelete && (
+                <td className="right action-cell" data-label="Acciones">
+                  <button
+                    className="delete-button"
+                    onClick={() => onDelete(s.id)}
+                    aria-label={`Eliminar venta de ${s.product}`}
+                    title="Eliminar venta"
+                  >
+                    <Trash2 />
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -796,7 +878,15 @@ function ExpensesPage({ store, open }: { store: Store; open: () => void }) {
     </>
   );
 }
-function CustomersPage({ store, open }: { store: Store; open: () => void }) {
+function CustomersPage({
+  store,
+  open,
+  remove,
+}: {
+  store: Store;
+  open: () => void;
+  remove: (id: number) => void;
+}) {
   return (
     <>
       <PageHeader
@@ -818,6 +908,14 @@ function CustomersPage({ store, open }: { store: Store; open: () => void }) {
         )}
         {store.customers.map((c, i) => (
           <article className="card customer-card" key={c.id}>
+            <button
+              className="delete-button card-delete"
+              onClick={() => remove(c.id)}
+              aria-label={`Eliminar cliente ${c.name}`}
+              title="Eliminar cliente"
+            >
+              <Trash2 />
+            </button>
             <div className={`customer-avatar c${i % 4}`}>
               {c.name
                 .split(" ")
@@ -843,7 +941,15 @@ function CustomersPage({ store, open }: { store: Store; open: () => void }) {
     </>
   );
 }
-function InventoryPage({ store, open }: { store: Store; open: () => void }) {
+function InventoryPage({
+  store,
+  open,
+  remove,
+}: {
+  store: Store;
+  open: () => void;
+  remove: (id: number) => void;
+}) {
   const value = store.yarn.reduce((a, y) => a + y.units * y.cost, 0);
   return (
     <>
@@ -890,6 +996,14 @@ function InventoryPage({ store, open }: { store: Store; open: () => void }) {
               {money(y.cost)}
               <small> / ud.</small>
             </strong>
+            <button
+              className="delete-button"
+              onClick={() => remove(y.id)}
+              aria-label={`Eliminar ${y.name} ${y.color}`}
+              title="Eliminar del inventario"
+            >
+              <Trash2 />
+            </button>
           </article>
         ))}
       </section>
