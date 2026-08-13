@@ -3,14 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 const url = import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string | undefined;
 const key = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY as
   string | undefined;
-const accountEmail = "margarita68@psiecrvtetqrfmrmmtcw.supabase.co";
+const accountEmail = import.meta.env.NEXT_PUBLIC_AUTH_EMAIL as
+  string | undefined;
+const accountUsername = import.meta.env.NEXT_PUBLIC_AUTH_USERNAME as
+  string | undefined;
 
 export const supabaseConfigured = Boolean(url && key);
 export const supabase = supabaseConfigured ? createClient(url!, key!) : null;
 
 export async function signIn(username: string, password: string) {
   if (!supabase) return "Supabase no está configurado.";
-  if (username.trim().toLowerCase() !== "margarita68")
+  if (!accountEmail || !accountUsername)
+    return "La cuenta de acceso no está configurada.";
+  if (username.trim().toLowerCase() !== accountUsername.toLowerCase())
     return "Usuario o contraseña incorrectos.";
   const { error } = await supabase.auth.signInWithPassword({
     email: accountEmail,

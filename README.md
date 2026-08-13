@@ -1,62 +1,84 @@
-# Maja — contabilidad para un taller de tejido
+# Maja
 
-MVP web en React y TypeScript para registrar ventas, gastos, clientes e inventario de lana. Incluye un panel financiero y un asistente que interpreta los registros en lenguaje sencillo.
+Sistema sencillo para administrar un taller de tejido.
 
-## Ejecutar
+Permite registrar:
+
+- Ventas.
+- Gastos.
+- Clientes.
+- Inventario de lana.
+- Análisis del negocio con Gemini.
+
+## Requisitos
+
+- Node.js instalado.
+- Un proyecto de Supabase.
+- Una clave de la API de Gemini.
+
+## Instalación
+
+Clona el repositorio e instala las dependencias:
 
 ```bash
+git clone https://github.com/jairoteran/maja-tejido-mvp.git
+cd maja-tejido-mvp
 npm install
+```
+
+Copia `.env.example` como `.env.local` y completa las claves:
+
+```env
+GEMINI_API_KEY=tu_clave_de_gemini
+GEMINI_MODEL=gemini-3.6-flash
+
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=tu_clave_publicable
+NEXT_PUBLIC_AUTH_USERNAME=tu_usuario
+NEXT_PUBLIC_AUTH_EMAIL=correo_del_usuario_en_supabase
+```
+
+No subas `.env.local` a GitHub.
+
+## Configurar Supabase
+
+En **Supabase → SQL Editor**, ejecuta estos archivos en orden:
+
+1. `supabase/migrations/202608130001_create_maja_state.sql`
+2. `supabase/migrations/202608130002_secure_with_auth.sql`
+
+Después, en **Authentication → Users**, crea o confirma el correo indicado en `NEXT_PUBLIC_AUTH_EMAIL`. La contraseña se configura directamente en Supabase.
+
+## Iniciar
+
+```bash
 npm run dev
 ```
 
-La información se guarda en `localStorage`, por lo que permanece en el mismo navegador. Los datos iniciales son demostrativos.
+Abre la dirección que aparece en la terminal, normalmente:
 
-## Gemini en local
-
-El asistente consulta Gemini a través de `/api/ai`; la clave nunca se envía al navegador. Crea `.env.local` a partir de `.env.example` y añade una clave de Google AI Studio:
-
-```env
-GEMINI_API_KEY=tu_clave
-GEMINI_MODEL=gemini-3.6-flash
+```text
+http://localhost:5173
 ```
 
-`.env.local` está excluido del control de versiones. Si Gemini falla, la interfaz muestra un análisis local básico y lo identifica claramente.
+Inicia sesión con el usuario configurado en Supabase.
 
-## Supabase
+## Uso
 
-La app intenta cargar y guardar el estado en Supabase y conserva `localStorage` como respaldo. Antes del primer uso, ejecuta en **Supabase → SQL Editor** el archivo:
+- **Inicio:** muestra ingresos, gastos y ganancia.
+- **Ventas:** registra los pedidos vendidos.
+- **Gastos:** registra compras de lana, herramientas y otros materiales.
+- **Clientes:** guarda los datos de los compradores.
+- **Inventario:** controla los ovillos y muestra alertas de stock bajo.
+- **Mi contador IA:** responde preguntas utilizando los datos registrados.
 
-`supabase/migrations/202608130001_create_maja_state.sql`
+Los datos se guardan en Supabase. El navegador conserva una copia local como respaldo.
 
-Después configura estas variables en `.env.local`:
+## Otros comandos
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_tu_clave
+```bash
+npm run build
+npm run lint
 ```
 
-La política incluida es provisional para probar un taller de una sola usuaria. Permite acceso anónimo al registro y debe sustituirse por Supabase Auth y políticas por usuario antes de cargar datos reales o publicar la aplicación.
-
-### Activar el acceso privado
-
-1. En **Authentication → Users**, confirma la cuenta técnica asociada a `Margarita68`.
-2. Ejecuta `supabase/migrations/202608130002_secure_with_auth.sql` en el SQL Editor.
-
-La aplicación muestra únicamente el nombre de usuario; Supabase gestiona la contraseña, la sesión y su persistencia. La segunda migración revoca el acceso anónimo y limita cada registro a `auth.uid()`.
-
-## Comandos
-
-- `npm run dev`: servidor de desarrollo.
-- `npm run build`: compilación de producción.
-- `npm run lint`: validación estática.
-
-## Alcance actual
-
-- Panel con ingresos, gastos, ganancia y actividad reciente.
-- Registro de ventas y actualización automática del historial del cliente.
-- Registro de compras y otros gastos por categoría.
-- Directorio de clientes.
-- Inventario de ovillos con alertas de stock bajo.
-- Análisis financiero conversacional con Gemini y respaldo local.
-
-Para convertirlo en un producto multiusuario hacen falta autenticación, base de datos, copias de seguridad y un backend desplegado que proteja la clave. La orientación mostrada no reemplaza asesoría tributaria profesional.
+El análisis de la IA es orientativo y no reemplaza asesoría contable o tributaria profesional.
