@@ -103,6 +103,10 @@ function App() {
   const [modal, setModal] = useState<
     "sale" | "expense" | "customer" | "yarn" | null
   >(null);
+  const [editing, setEditing] = useState<{
+    type: "sale" | "customer" | "yarn";
+    id: number;
+  } | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
   const startupStore = useRef(store);
@@ -188,7 +192,7 @@ function App() {
     if (
       !window.confirm("¿Eliminar esta venta? Esta acción no se puede deshacer.")
     )
-      return;
+      return false;
     setStore((current) => {
       const sale = current.sales.find((item) => item.id === id);
       if (!sale) return current;
@@ -206,6 +210,7 @@ function App() {
         ),
       };
     });
+    return true;
   };
   const removeCustomer = (id: number) => {
     if (
@@ -213,17 +218,88 @@ function App() {
         "¿Eliminar este cliente? Sus ventas históricas se conservarán.",
       )
     )
-      return;
+      return false;
     setStore((current) => ({
       ...current,
       customers: current.customers.filter((customer) => customer.id !== id),
     }));
+    return true;
   };
   const removeYarn = (id: number) => {
-    if (!window.confirm("¿Eliminar esta lana del inventario?")) return;
+    if (!window.confirm("¿Eliminar esta lana del inventario?")) return false;
     setStore((current) => ({
       ...current,
       yarn: current.yarn.filter((item) => item.id !== id),
+    }));
+    return true;
+  };
+  const updateSale = (sale: Sale) => {
+    setStore((current) => {
+      const previous = current.sales.find((item) => item.id === sale.id);
+      if (!previous) return current;
+      let customers = current.customers.map((customer) =>
+        customer.name.toLowerCase() === previous.customer.toLowerCase()
+          ? {
+              ...customer,
+              orders: Math.max(0, customer.orders - 1),
+              total: Math.max(0, customer.total - previous.amount),
+            }
+          : customer,
+      );
+      const nextCustomer = customers.find(
+        (customer) =>
+          customer.name.toLowerCase() === sale.customer.toLowerCase(),
+      );
+      customers = nextCustomer
+        ? customers.map((customer) =>
+            customer.id === nextCustomer.id
+              ? {
+                  ...customer,
+                  orders: customer.orders + 1,
+                  total: customer.total + sale.amount,
+                }
+              : customer,
+          )
+        : [
+            ...customers,
+            {
+              id: Date.now(),
+              name: sale.customer,
+              phone: "",
+              orders: 1,
+              total: sale.amount,
+            },
+          ];
+      return {
+        ...current,
+        sales: current.sales.map((item) => (item.id === sale.id ? sale : item)),
+        customers,
+      };
+    });
+  };
+  const updateCustomer = (customer: Customer) => {
+    setStore((current) => {
+      const previous = current.customers.find(
+        (item) => item.id === customer.id,
+      );
+      if (!previous) return current;
+      return {
+        ...current,
+        customers: current.customers.map((item) =>
+          item.id === customer.id ? customer : item,
+        ),
+        sales: current.sales.map((sale) =>
+          sale.customer.toLowerCase() === previous.name.toLowerCase()
+            ? { ...sale, customer: customer.name }
+            : sale,
+        ),
+      };
+    });
+  };
+  const updateYarn = (yarn: Yarn) => {
+    setStore((current) => ({
+      ...current,
+      yarn: current.yarn.map((item) => (item.id === yarn.id ? yarn : item)),
     }));
   };
   return (
@@ -312,7 +388,7 @@ function App() {
             <SalesPage
               store={store}
               open={() => setModal("sale")}
-              remove={removeSale}
+              edit={(id) => setEditing({ type: "sale", id })}
             />
           )}{" "}
           {page === "Gastos" && (
@@ -322,14 +398,14 @@ function App() {
             <CustomersPage
               store={store}
               open={() => setModal("customer")}
-              remove={removeCustomer}
+              edit={(id) => setEditing({ type: "customer", id })}
             />
           )}{" "}
           {page === "Inventario" && (
             <InventoryPage
               store={store}
               open={() => setModal("yarn")}
-              remove={removeYarn}
+              edit={(id) => setEditing({ type: "yarn", id })}
             />
           )}{" "}
           {page === "Mi contador IA" && <AIPage store={store} />}
@@ -341,6 +417,19 @@ function App() {
           store={store}
           update={setStore}
           close={() => setModal(null)}
+        />
+      )}
+      {editing && (
+        <EditModal
+          selection={editing}
+          store={store}
+          close={() => setEditing(null)}
+          updateSale={updateSale}
+          updateCustomer={updateCustomer}
+          updateYarn={updateYarn}
+          removeSale={removeSale}
+          removeCustomer={removeCustomer}
+          removeYarn={removeYarn}
         />
       )}
     </div>
@@ -696,11 +785,11 @@ function PageHeader({
 function SalesPage({
   store,
   open,
-  remove,
+  edit,
 }: {
   store: Store;
   open: () => void;
-  remove: (id: number) => void;
+  edit: (id: number) => void;
 }) {
   const total = store.sales.reduce((a, s) => a + s.amount, 0);
   return (
@@ -743,17 +832,17 @@ function SalesPage({
             Exportar
           </button>
         </div>
-        <SalesTable sales={store.sales} onDelete={remove} />
+        <SalesTable sales={store.sales} onOpen={edit} />
       </div>
     </>
   );
 }
 function SalesTable({
   sales,
-  onDelete,
+  onOpen,
 }: {
   sales: Sale[];
-  onDelete?: (id: number) => void;
+  onOpen?: (id: number) => void;
 }) {
   return (
     <div className="table-wrap">
@@ -765,19 +854,30 @@ function SalesTable({
             <th>Fecha</th>
             <th>Estado</th>
             <th className="right">Total</th>
-            {onDelete && <th className="right">Acciones</th>}
           </tr>
         </thead>
         <tbody>
           {sales.length === 0 && (
             <tr>
-              <td colSpan={onDelete ? 6 : 5} className="empty-cell">
+              <td colSpan={5} className="empty-cell">
                 No hay ventas registradas todavía.
               </td>
             </tr>
           )}
           {sales.map((s) => (
-            <tr key={s.id}>
+            <tr
+              key={s.id}
+              className={onOpen ? "interactive-row" : ""}
+              onClick={() => onOpen?.(s.id)}
+              onKeyDown={(event) => {
+                if (onOpen && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onOpen(s.id);
+                }
+              }}
+              tabIndex={onOpen ? 0 : undefined}
+              role={onOpen ? "button" : undefined}
+            >
               <td data-label="Producto">
                 <strong>{s.product}</strong>
               </td>
@@ -791,18 +891,6 @@ function SalesTable({
               <td className="right" data-label="Total">
                 <strong>{money(s.amount)}</strong>
               </td>
-              {onDelete && (
-                <td className="right action-cell" data-label="Acciones">
-                  <button
-                    className="delete-button"
-                    onClick={() => onDelete(s.id)}
-                    aria-label={`Eliminar venta de ${s.product}`}
-                    title="Eliminar venta"
-                  >
-                    <Trash2 />
-                  </button>
-                </td>
-              )}
             </tr>
           ))}
         </tbody>
@@ -881,11 +969,11 @@ function ExpensesPage({ store, open }: { store: Store; open: () => void }) {
 function CustomersPage({
   store,
   open,
-  remove,
+  edit,
 }: {
   store: Store;
   open: () => void;
-  remove: (id: number) => void;
+  edit: (id: number) => void;
 }) {
   return (
     <>
@@ -907,15 +995,19 @@ function CustomersPage({
           </div>
         )}
         {store.customers.map((c, i) => (
-          <article className="card customer-card" key={c.id}>
-            <button
-              className="delete-button card-delete"
-              onClick={() => remove(c.id)}
-              aria-label={`Eliminar cliente ${c.name}`}
-              title="Eliminar cliente"
-            >
-              <Trash2 />
-            </button>
+          <article
+            className="card customer-card interactive-card"
+            key={c.id}
+            onClick={() => edit(c.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                edit(c.id);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+          >
             <div className={`customer-avatar c${i % 4}`}>
               {c.name
                 .split(" ")
@@ -944,11 +1036,11 @@ function CustomersPage({
 function InventoryPage({
   store,
   open,
-  remove,
+  edit,
 }: {
   store: Store;
   open: () => void;
-  remove: (id: number) => void;
+  edit: (id: number) => void;
 }) {
   const value = store.yarn.reduce((a, y) => a + y.units * y.cost, 0);
   return (
@@ -983,7 +1075,19 @@ function InventoryPage({
           </div>
         )}
         {store.yarn.map((y, i) => (
-          <article className="card yarn-card" key={y.id}>
+          <article
+            className="card yarn-card interactive-card"
+            key={y.id}
+            onClick={() => edit(y.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                edit(y.id);
+              }
+            }}
+            tabIndex={0}
+            role="button"
+          >
             <div className={`yarn-ball y${i % 4}`}>〰</div>
             <div>
               <h3>{y.name}</h3>
@@ -996,14 +1100,6 @@ function InventoryPage({
               {money(y.cost)}
               <small> / ud.</small>
             </strong>
-            <button
-              className="delete-button"
-              onClick={() => remove(y.id)}
-              aria-label={`Eliminar ${y.name} ${y.color}`}
-              title="Eliminar del inventario"
-            >
-              <Trash2 />
-            </button>
           </article>
         ))}
       </section>
@@ -1181,6 +1277,251 @@ function AIPage({ store }: { store: Store }) {
     </>
   );
 }
+function EditModal({
+  selection,
+  store,
+  close,
+  updateSale,
+  updateCustomer,
+  updateYarn,
+  removeSale,
+  removeCustomer,
+  removeYarn,
+}: {
+  selection: { type: "sale" | "customer" | "yarn"; id: number };
+  store: Store;
+  close: () => void;
+  updateSale: (sale: Sale) => void;
+  updateCustomer: (customer: Customer) => void;
+  updateYarn: (yarn: Yarn) => void;
+  removeSale: (id: number) => boolean;
+  removeCustomer: (id: number) => boolean;
+  removeYarn: (id: number) => boolean;
+}) {
+  const item =
+    selection.type === "sale"
+      ? store.sales.find((entry) => entry.id === selection.id)
+      : selection.type === "customer"
+        ? store.customers.find((entry) => entry.id === selection.id)
+        : store.yarn.find((entry) => entry.id === selection.id);
+  if (!item) return null;
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    if (selection.type === "sale") {
+      updateSale({
+        ...(item as Sale),
+        product: String(form.get("product")),
+        customer: String(form.get("customer")),
+        date: String(form.get("date")),
+        amount: Number(form.get("amount")),
+        cost: Number(form.get("cost")),
+        status: String(form.get("status")) as Sale["status"],
+      });
+    } else if (selection.type === "customer") {
+      updateCustomer({
+        ...(item as Customer),
+        name: String(form.get("name")),
+        phone: String(form.get("phone")),
+      });
+    } else {
+      updateYarn({
+        ...(item as Yarn),
+        name: String(form.get("name")),
+        color: String(form.get("color")),
+        units: Number(form.get("units")),
+        min: Number(form.get("min")),
+        cost: Number(form.get("cost")),
+      });
+    }
+    close();
+  };
+  const remove = () => {
+    const removed =
+      selection.type === "sale"
+        ? removeSale(selection.id)
+        : selection.type === "customer"
+          ? removeCustomer(selection.id)
+          : removeYarn(selection.id);
+    if (removed) close();
+  };
+  const title =
+    selection.type === "sale"
+      ? "Editar venta"
+      : selection.type === "customer"
+        ? "Editar cliente"
+        : "Editar inventario";
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && close()}
+    >
+      <div className="modal">
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">DETALLE DEL REGISTRO</p>
+            <h2>{title}</h2>
+          </div>
+          <button onClick={close} aria-label="Cerrar">
+            <X />
+          </button>
+        </div>
+        <form onSubmit={submit}>
+          {selection.type === "sale" && (
+            <>
+              <label>
+                Producto
+                <input
+                  name="product"
+                  required
+                  defaultValue={(item as Sale).product}
+                />
+              </label>
+              <div className="form-row">
+                <label>
+                  Cliente
+                  <input
+                    name="customer"
+                    required
+                    defaultValue={(item as Sale).customer}
+                    list="edit-customers"
+                  />
+                  <datalist id="edit-customers">
+                    {store.customers.map((customer) => (
+                      <option key={customer.id}>{customer.name}</option>
+                    ))}
+                  </datalist>
+                </label>
+                <label>
+                  Fecha
+                  <input
+                    name="date"
+                    type="date"
+                    required
+                    defaultValue={(item as Sale).date}
+                  />
+                </label>
+              </div>
+              <div className="form-row">
+                <label>
+                  Valor de venta
+                  <input
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    defaultValue={(item as Sale).amount}
+                  />
+                </label>
+                <label>
+                  Costo de materiales
+                  <input
+                    name="cost"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    defaultValue={(item as Sale).cost}
+                  />
+                </label>
+              </div>
+              <label>
+                Estado
+                <select name="status" defaultValue={(item as Sale).status}>
+                  <option>Pagado</option>
+                  <option>Pendiente</option>
+                </select>
+              </label>
+            </>
+          )}
+          {selection.type === "customer" && (
+            <>
+              <label>
+                Nombre
+                <input
+                  name="name"
+                  required
+                  defaultValue={(item as Customer).name}
+                />
+              </label>
+              <label>
+                Teléfono
+                <input name="phone" defaultValue={(item as Customer).phone} />
+              </label>
+            </>
+          )}
+          {selection.type === "yarn" && (
+            <>
+              <div className="form-row">
+                <label>
+                  Tipo de lana
+                  <input
+                    name="name"
+                    required
+                    defaultValue={(item as Yarn).name}
+                  />
+                </label>
+                <label>
+                  Color
+                  <input
+                    name="color"
+                    required
+                    defaultValue={(item as Yarn).color}
+                  />
+                </label>
+              </div>
+              <div className="form-row">
+                <label>
+                  Cantidad de ovillos
+                  <input
+                    name="units"
+                    type="number"
+                    min="0"
+                    required
+                    defaultValue={(item as Yarn).units}
+                  />
+                </label>
+                <label>
+                  Avisar cuando queden
+                  <input
+                    name="min"
+                    type="number"
+                    min="0"
+                    required
+                    defaultValue={(item as Yarn).min}
+                  />
+                </label>
+              </div>
+              <label>
+                Costo por ovillo
+                <input
+                  name="cost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  defaultValue={(item as Yarn).cost}
+                />
+              </label>
+            </>
+          )}
+          <div className="modal-actions edit-actions">
+            <button type="button" className="danger-action" onClick={remove}>
+              <Trash2 /> Eliminar
+            </button>
+            <button type="button" className="secondary" onClick={close}>
+              Cancelar
+            </button>
+            <button className="primary">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function EntryModal({
   type,
   store,
