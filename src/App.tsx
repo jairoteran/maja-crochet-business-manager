@@ -119,10 +119,18 @@ function App() {
       setAuthChecked(true);
       return;
     }
-    void supabase.auth.getSession().then(({ data }) => {
-      setUserId(data.session?.user.id ?? null);
+    const authTimeout = window.setTimeout(() => {
+      setUserId(null);
       setAuthChecked(true);
-    });
+    }, 8000);
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => setUserId(data.session?.user.id ?? null))
+      .catch(() => setUserId(null))
+      .finally(() => {
+        window.clearTimeout(authTimeout);
+        setAuthChecked(true);
+      });
     const subscription = supabase.auth.onAuthStateChange((_event, session) => {
       setUserId(session?.user.id ?? null);
       setAuthChecked(true);
@@ -132,7 +140,10 @@ function App() {
         localStorage.removeItem("maja-store-v2");
       }
     });
-    return () => subscription.data.subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(authTimeout);
+      subscription.data.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
